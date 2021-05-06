@@ -4,7 +4,7 @@ import telegram_send
 import datetime
 import time
 
-
+# Get Data From COWIN Public API
 def get_data_from_cowin(pincode):
 
     url = "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByPin?pincode=" + \
@@ -14,21 +14,21 @@ def get_data_from_cowin(pincode):
     data = json.loads(response.text)
     return data
 
-
-def check_requirements(data, requried_age):
+# Checks for Avaliable slot with given requirements 
+def check_requirements(data, required_age):
     final_list = []
     for center in data['centers']:
-        availble_sessions = []
+        available_sessions = []
         for session in center['sessions']:
-            if(session['available_capacity'] > 0 and session['min_age_limit'] <= requried_age):
-                availble_sessions.append(session)
+            if(session['available_capacity'] > 0 and session['min_age_limit'] <= required_age):
+                available_sessions.append(session)
 
-        if(len(availble_sessions) != 0):
-            center['sessions'] = availble_sessions
+        if(len(available_sessions) != 0):
+            center['sessions'] = available_sessions
             final_list.append(center)
     return final_list
 
-
+# generates the message which will sent
 def generate_notification_string(details_of_appointment):
 
     message = "Covid-19 Vaccination Slot Available 🎉\n\nPlease register as soon as possible 📝\n\nDetails of centers-\n"
@@ -58,7 +58,7 @@ def generate_notification_string(details_of_appointment):
 
     return message
 
-
+# Sends message to telegram bot
 def send_notification(message):
     telegram_send.send(messages=[message])
     print("notification success")
@@ -67,16 +67,18 @@ def send_notification(message):
 # TO-DO - Change pincode and require age according to your need
 
 pincode = 273002
-requried_age = 45
-refresh_time= 100 # in seconds
+required_age = 45
+refresh_time= 60 # in seconds
+
+
 data = get_data_from_cowin(pincode)
-final = check_requirements(data, requried_age)
+final = check_requirements(data, required_age)
 
 while(not final):
     time.sleep(refresh_time)
     print("called again")
     data = get_data_from_cowin(pincode)
-    final = check_requirements(data, requried_age)
+    final = check_requirements(data, required_age)
 
 message = generate_notification_string(final)
 send_notification(message)
